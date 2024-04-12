@@ -2,7 +2,7 @@ from bson import objectid
 from fastapi import status, File, UploadFile
 from Api.models.users import CreateUser
 from Api.Routes.utils import getResponse, riseHttpExceptionIfNotFound
-from Api.helpers.save_picture import save_picture
+# from Api.helpers.save_picture import save_picture
 from Api.Services import usersService as service
 from fastapi import APIRouter
 
@@ -42,12 +42,12 @@ async def deleteUser(id):
     return getResponse(done, errorMessage="There was an error.")   
 
 
-@userRoutes.post(UploadImage+'{id}', status_code=status.HTTP_204_NO_CONTENT)
-async def uploadUserImage(id: str, file: UploadFile = File(...)):
-    result = await resultVerification(id)
-    imageUrl = save_picture(file=file, folderName='users', fileName=result['name'])
-    done = await service.savePicture(id, imageUrl)
-    return getResponse(done, errorMessage="An error occurred while saving user image.")
+# @userRoutes.post(UploadImage+'{id}', status_code=status.HTTP_204_NO_CONTENT)
+# async def uploadUserImage(id: str, file: UploadFile = File(...)):
+#     result = await resultVerification(id)
+#     imageUrl = save_picture(file=file, folderName='users', fileName=result['name'])
+#     done = await service.savePicture(id, imageUrl)
+#     return getResponse(done, errorMessage="An error occurred while saving user image.")
 
 
 
