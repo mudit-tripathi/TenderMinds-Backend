@@ -4,7 +4,15 @@ from Api.config.db import db
 from Api.Schemas.serializeObjects import serializeDict, serializeList
 from Api.constant.constants import BATCH_SIZE
 
+from Api.helpers.tendersDataCleaningHelper import improve_english_gemini
+from Api.helpers.tendersDataCleaningHelper import contract_info
 
+
+async def clean_tender_description(tender):
+    return improve_english_gemini(tender)
+
+async def update_contract_info_service(tender):
+    return contract_info(tender)
 
 async def CleanTenders() -> str:
     pre_processed_tenders_collection = db['pre-processed-tenders']

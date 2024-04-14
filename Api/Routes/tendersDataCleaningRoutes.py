@@ -4,10 +4,14 @@ from Api.models.users import CreateUser
 from Api.Routes.utils import getResponse, riseHttpExceptionIfNotFound
 # from Api.helpers.save_picture import save_picture
 from Api.Services import tendersDataCleaningService as service
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Body
+from Api.Services import tendersDataCleaningService as service
 
 tendersDataCleanRoutes = APIRouter()
 base = '/tenders-cleaning/'
+
+
+
 
 # _notFoundMessage = "Could not find user with the given Id."
 
@@ -26,6 +30,23 @@ base = '/tenders-cleaning/'
 async def cleanTenders():
     return await service.CleanTenders()
 
+@tendersDataCleanRoutes.post(base + 'clean-tender')
+async def clean_tender_description_endpoint(tender: dict = Body(...)):
+    try:
+        # The tender data would be passed in the request body as JSON
+        improved_description = await service.clean_tender_description(tender)
+        return {"improved_description": improved_description}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@tendersDataCleanRoutes.post(base + 'update-contract-info')
+async def update_contract_info_endpoint(tender: dict = Body(...)):
+    try:
+        # Call the service function and return the generated contract summary
+        contract_summary = await service.update_contract_info_service(tender)
+        return {"contract_summary": contract_summary}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # @userRoutes.put(base+'{id}', status_code=status.HTTP_204_NO_CONTENT)
 # async def updateUser(id, data: CreateUser):
