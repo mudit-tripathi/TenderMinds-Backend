@@ -11,7 +11,7 @@ from Api.helpers.tendersDataCleaningHelper import contract_info
 async def clean_tender_description(tender):
     return improve_english_gemini(tender)
 
-async def update_contract_info_service(tender):
+async def get_contract_summary(tender):
     return contract_info(tender)
 
 async def CleanTenders() -> str:
@@ -20,8 +20,9 @@ async def CleanTenders() -> str:
     total_pre_processed_tenders_tenders = pre_processed_tenders_collection.count_documents({})
     total_processed = 0
     for pre_processed_tenders_document in pre_processed_tenders_cursor:
-        print(pre_processed_tenders_document)
-        break
+        clean_tender_description(pre_processed_tenders_document)
+        get_contract_summary(pre_processed_tenders_document)
+       
     return total_pre_processed_tenders_tenders
 
 

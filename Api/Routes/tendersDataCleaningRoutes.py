@@ -39,11 +39,11 @@ async def clean_tender_description_endpoint(tender: dict = Body(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@tendersDataCleanRoutes.post(base + 'update-contract-info')
-async def update_contract_info_endpoint(tender: dict = Body(...)):
+@tendersDataCleanRoutes.post(base + 'contract-summary')
+async def contract_summary_endpoint(tender: dict = Body(...)):
     try:
         # Call the service function and return the generated contract summary
-        contract_summary = await service.update_contract_info_service(tender)
+        contract_summary = await service.get_contract_summary(tender)
         return {"contract_summary": contract_summary}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
