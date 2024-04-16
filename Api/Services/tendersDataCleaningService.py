@@ -12,6 +12,7 @@ async def CleanTenders() -> str:
     total_pre_processed_tenders_tenders = pre_processed_tenders_collection.count_documents({})
     total_processed = 0
     for pre_processed_tenders_document in pre_processed_tenders_cursor:
+        print("Inside Loop")
         return await tendersDataCleaningHelper(pre_processed_tenders_document)
         break
     return total_pre_processed_tenders_tenders

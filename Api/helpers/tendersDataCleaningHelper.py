@@ -7,69 +7,57 @@ from langchain_google_genai import (
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 import google.generativeai as genai
-from Api.constant.constants import OPENAI_API_KEY , GOOGLE_API_KEY
-from Api.constant.prompts import IMPROVE_DESCRIPTION_FROM_GEN_AI
-from langchain_google_vertexai import ChatVertexAI
+from Api.helpers.gemini import chat_gemini
+from Api.constant.prompts import IMPROVING_ENGLISH_PROMPT , IMPROVING_ENGLISH_TENDER_INFORMATION
 from langchain.llms import OpenAI
-from langchain_openai import ChatOpenAI
+from Api.helpers.mongoHelper import insert_processed_tenders
+from langdetect import detect
 
-async def improveDescriptionFromGenAi(tenderTitle, tenderDescription, tenderProductCategory):
+def improve_english_gemini(description):
     try:
-        # Set the GOOGLE_API_KEY in the environment
-        # os.environ['GOOGLE_API_KEY'] = GOOGLE_API_KEY
-        # genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-        os.environ['OPENAI_API_KEY'] = OPENAI_API_KEY
-        # Create a prompt template with the provided inputs
         prompt = PromptTemplate(
-            input_variables=["title", "workType", "description"],
-            template=IMPROVE_DESCRIPTION_FROM_GEN_AI
+            input_variables=["description"],
+            template = IMPROVING_ENGLISH_PROMPT
         )
-        
-        # Format the prompt with the provided title, workType, and description
-        formatted_prompt = prompt.format(title=tenderTitle, workType=tenderProductCategory, description=tenderDescription)
-        llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0)
-
-        # Use the formatted prompt from the previous step
-        result = llm.invoke(formatted_prompt)
-        print(result)
-        return result
-        
+        formatted_prompt = prompt.format(description=description)
+        return chat_gemini(formatted_prompt)
     except Exception as e:
-        # Handle any exceptions that occur during the function's execution
-        print(f"An error occurred: {e}")
-        # You can also choose to log the error or take other actions as needed
-# async def improveDescriptionFromGenAi(tenderTitle, tenderDescription, tenderProductCategory):
-#     try:
-#         # Set the GOOGLE_API_KEY in the environment
-#         os.environ['GOOGLE_API_KEY'] = GOOGLE_API_KEY
-#         genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-        
-#         # Create a prompt template with the provided inputs
-#         prompt = PromptTemplate(
-#             input_variables=["title", "workType", "description"],
-#             template=IMPROVE_DESCRIPTION_FROM_GEN_AI
-#         )
-        
-#         # Format the prompt with the provided title, workType, and description
-#         formatted_prompt = prompt.format(title=tenderTitle, workType=tenderProductCategory, description=tenderDescription)
-        
-#         llm = ChatVertexAI(model="gemini-pro", max_output_tokens=1000,)
-
-#         # Use the formatted prompt from the previous step
-#         result = llm.invoke(formatted_prompt)
-
-#         print(result)
-#         return result
-        
-#     except Exception as e:
-#         # Handle any exceptions that occur during the function's execution
-#         print(f"An error occurred: {e}")
-#         # You can also choose to log the error or take other actions as needed
-
-# Example usage
-# improveDescriptionFromGenAi("Sample Title", "Sample Description", "Sample Product Category")
-
+        print(f"Encountered a Gemini-specific exception: {e}")
+        return "harm"
     
+
+def contract_info(description,work_type,organisation_chain,locations):
+    try:
+        prompt = PromptTemplate(
+            input_variables=["description", "work_type", "organisation_chain", "locations"],
+            template =IMPROVING_ENGLISH_TENDER_INFORMATION
+        )
+        formatted_prompt = prompt.format(description=description, work_type=work_type, organisation_chain=organisation_chain, locations=locations)
+
+        # Invoke the language model with the prompt
+        return chat_gemini(formatted_prompt)
+    except Exception as e:
+        print(f"Encountered an exception: {e}")
+        return "harm"  # Return "harm" if an exception is encountered
+    
+
+def check_englsih_quality(title,description,work_type,organisation_chain,locations):
+    description_language = detect(description)
+    title_language = detect(title)
+    if ' ' in description:
+        if description_language == 'en':
+            return description
+        else :
+            return improve_english_gemini(description)
+    elif ' ' in title:
+        if title_language == 'en':
+            return title
+        else :
+            return improve_english_gemini(title)
+    else :
+        return contract_info(description,work_type,organisation_chain,locations)
+    
+
 async def tendersDataCleaningHelper(tender):
     # Use get method with a default value for each key to handle missing data
     tenderOrgName = tender.get('Basic Details', {}).get('Organisation Chain', '')
@@ -88,7 +76,26 @@ async def tendersDataCleaningHelper(tender):
     tenderBidStartDate = tender.get('Critical Dates', {}).get('Bid Submission Start Date', '')
     tenderBidEndDate = tender.get('Critical Dates', {}).get('Bid Submission End Date', '')
     tenderUrl = tender.get('tender_url', '')
-    return await improveDescriptionFromGenAi(tenderTitle,tenderDescription,tenderProductCategory)
-
+    AITenderDescription = improve_english_gemini(tenderDescription)
+    document = {
+        "tenderOrgName": tenderOrgName,
+        "tenderRefNumber": tenderRefNumber,
+        "tenderId": tenderId,
+        "tenderCategory": tenderCategory,
+        "tenderCost": tenderCost,
+        "tenderEMDCost": tenderEMDCost,
+        "tenderTitle": tenderTitle,
+        "tenderDescription": tenderDescription,
+        "tenderProductCategory": tenderProductCategory,
+        "tenderBidLocation": tenderBidLocation,
+        "tenderBidStartDate": tenderBidStartDate,
+        "tenderBidEndDate": tenderBidEndDate,
+        "tenderUrl": tenderUrl,
+        "AITenderDescription": AITenderDescription
+    }
+    print('tenderDescription',tenderDescription)
+    print('AITenderDescription',AITenderDescription)
+    processed_tenders = await insert_processed_tenders(document)
+    print(processed_tenders)
 
 
