@@ -6,6 +6,7 @@ from Api.Routes.usersRoutes import userRoutes
 from Api.Routes.defaultRoute import defaultRoute
 from Api.Routes.tendersDataCleaningRoutes import tendersDataCleanRoutes
 from Api.Routes.tendersCreatingEmbeddingsRoutes import tendersCreateEmbeddingRoutes
+from Api.Routes.queryingRoutes import tendersQueryingRoutes
 from Api.constant.constants import GOOGLE_API_KEY
 from fastapi.middleware.cors import CORSMiddleware
 os.environ['GOOGLE_API_KEY'] = GOOGLE_API_KEY
@@ -26,6 +27,7 @@ app.include_router(userRoutes,tags=['Users'], prefix='/api/users')
 app.include_router(defaultRoute)
 app.include_router(tendersDataCleanRoutes)
 app.include_router(tendersCreateEmbeddingRoutes)
+app.include_router(tendersQueryingRoutes)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
