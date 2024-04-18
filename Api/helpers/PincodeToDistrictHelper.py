@@ -1,6 +1,6 @@
 import requests
 
-def get_district_by_pincode(pincode):
+async def get_district_by_pincode(pincode):
     url = f"http://postalpincode.in/api/pincode/{pincode}"
     
     try:

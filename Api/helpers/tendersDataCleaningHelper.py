@@ -16,17 +16,17 @@ from langdetect import detect
 from Api.config.db import db
 
 
-def improve_english_gemini(description):
+async def improve_english_gemini(description):
     prompt = PromptTemplate(
         input_variables=["description"],
         template = IMPROVING_ENGLISH_PROMPT
     )
     formatted_prompt = prompt.format(description=description)
-    return chat_gemini(formatted_prompt)
+    return await chat_gemini(formatted_prompt)
     
     
 
-def contract_summary(description,work_type,organisation_chain,locations):
+async def contract_summary(description,work_type,organisation_chain,locations):
     prompt = PromptTemplate(
         input_variables=["description", "work_type", "organisation_chain", "locations"],
         template =IMPROVING_ENGLISH_TENDER_INFORMATION
@@ -34,7 +34,7 @@ def contract_summary(description,work_type,organisation_chain,locations):
     formatted_prompt = prompt.format(description=description, work_type=work_type, organisation_chain=organisation_chain, locations=locations)
 
     # Invoke the language model with the prompt
-    return chat_gemini(formatted_prompt)
+    return await chat_gemini(formatted_prompt)
   
 
 # def check_englsih_quality(title,description,work_type,organisation_chain,locations):
@@ -84,17 +84,17 @@ async def tendersDataCleaningHelper(tender):
         if description_language == 'en':
             AIImprovedDescription = tenderDescription
         else :
-            AIImprovedDescription = improve_english_gemini(tenderDescription)
+            AIImprovedDescription = await improve_english_gemini(tenderDescription)
     elif ' ' in tenderTitle:
         if title_language == 'en':
             AIImprovedDescription = tenderTitle
         else :
-            AIImprovedDescription = improve_english_gemini(tenderTitle)
+            AIImprovedDescription = await improve_english_gemini(tenderTitle)
     else:
         AIImprovedDescription = None
         
-    LocationByPincode = get_district_by_pincode(str(tenderBidLocation))
-    AIContractSummary = contract_summary(AIImprovedDescription, tenderProductCategory, tenderOrgName, LocationByPincode)
+    LocationByPincode = await get_district_by_pincode(str(tenderBidLocation))
+    AIContractSummary = await contract_summary(AIImprovedDescription, tenderProductCategory, tenderOrgName, LocationByPincode)
     tender_document = {
         'tenderOrgName': tenderOrgName,
         'tenderRefNumber': tenderRefNumber,

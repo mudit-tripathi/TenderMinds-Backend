@@ -4,7 +4,7 @@ from mixedbread_ai.client import MixedbreadAI
 # MixedBread AI setup
 mxbai = MixedbreadAI(api_key=MIXEDBREAD_API_KEY)
 
-def get_embedding(texts, model='mixedbread-ai/mxbai-embed-large-v1', prompt=None):
+async def get_embedding(texts, model='mixedbread-ai/mxbai-embed-large-v1', prompt=None):
     res = mxbai.embeddings(
         input=texts,
         model=model,

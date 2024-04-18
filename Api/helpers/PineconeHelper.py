@@ -1,10 +1,18 @@
 from Api.config.db import index
 from Api.helpers.embeddingsHelper import get_embedding
+from Api.helpers.dateToSecondsHelper import date_string_to_timestamp
+from langdetect import detect
+from Api.helpers.tendersDataCleaningHelper import improve_english_gemini
 
 async def upsert_document_to_pinecone(doc):
+    id= str(doc['_id'])
+    response = index.fetch(ids=[id])
+    if response['vectors']:
+        print(f"Document with the id {id} already exists")
+        return
     description = doc.get("AIContractSummary")  
     if description:
-        embedding = get_embedding([description])
+        embedding = await get_embedding([description])
 
         # Upsert vector into Pinecone
         index.upsert(vectors=[{
@@ -21,8 +29,10 @@ async def upsert_document_to_pinecone(doc):
                 "tenderDescription": doc['tenderDescription'],
                 "tenderProductCategory": doc['tenderProductCategory'],
                 "tenderBidLocation": doc['tenderBidLocation'],
-                "tenderBidStartDate": doc['tenderBidStartDate'],
-                "tenderBidEndDate": doc['tenderBidEndDate'],
+                "tenderBidStartDate":doc['tenderBidStartDate'],
+                "tenderBidEndDate":doc['tenderBidEndDate'],
+                "tenderBidStartDateSeconds": date_string_to_timestamp(doc['tenderBidStartDate']),
+                "tenderBidEndDateSeconds": date_string_to_timestamp(doc['tenderBidEndDate']),
                 "tenderUrl": doc['tenderUrl'],
                 "AIImprovedDescription": doc.get('AIImprovedDescription'),
                 "LocationByPincode": doc.get('LocationByPincode'),
@@ -31,18 +41,38 @@ async def upsert_document_to_pinecone(doc):
         }])
         print(f"Document {doc['_id']} upserted to Pinecone successfully.")
 
-def query_pinecone_for_mongoids(query, top_k=10):
-    # Get embedding for the query
-    vector = get_embedding(query)
+async def query_pinecone(query, top_k=10, emd_min_limit=0, emd_max_limit=2**63 - 1,  
+                   bid_start_min='01-Jan-1970 12:00 AM', bid_start_max='31-Dec-9999 12:00 AM', 
+                   bid_end_min='01-Jan-1970 12:00 AM', bid_end_max='31-Dec-9999 12:00 AM'):
+    
+    if not detect(query)=='en':
+        query=await improve_english_gemini(query)
 
-    # Query Pinecone
+    bid_start_min = date_string_to_timestamp(bid_start_min)  
+    bid_start_max = date_string_to_timestamp(bid_start_max )  
+    bid_end_min = date_string_to_timestamp(bid_end_min)  
+    bid_end_max = date_string_to_timestamp(bid_end_max)
+    # Get embedding for the query
+    vector = await get_embedding(query)
+
+    # Adjust Pinecone query to use a realistic high value instead of infinity
     response = index.query(
         vector=vector,
         top_k=top_k,
         include_values=False,
-        include_metadata=False
+        include_metadata=True,
+        filter={
+            "$and": [
+                {"tenderEMDCost": {"$gte": emd_min_limit}},
+                {"tenderEMDCost": {"$lte": emd_max_limit}},
+                {"tenderBidStartDateSeconds": {"$gte": bid_start_min}},
+                {"tenderBidStartDateSeconds": {"$lte": bid_start_max}},
+                {"tenderBidEndDateSeconds": {"$gte": bid_end_min}},
+                {"tenderBidEndDateSeconds": {"$lte": bid_end_max}}
+            ]
+        }
     )
 
-    # Extract MongoDB IDs from Pinecone response
-    match_ids = [match['id'] for match in response.get('matches', [])]
-    return match_ids
+    # Extract only metadata from Pinecone response matches
+    metadata_list = [match['metadata'] for match in response.get('matches', [])]
+    return metadata_list
