@@ -5,21 +5,26 @@ from Api.helpers.languageDetectHelper import safe_detect
 from Api.helpers.tendersDataCleaningHelper import improve_english_gemini
 
 async def upsert_document_to_pinecone(doc):
+    print("Inside: upsert_document_to_pinecone")
     id= str(doc['_id'])
     response = index.fetch(ids=[id])
     if response['vectors']:
         print(f"Document with the id {id} already exists")
         return
-    description = doc.get("AIContractSummary")  
+    description = doc["AIImprovedDescription"]
+    work_type= doc['tenderProductCategory']
+    organisation_chain=doc['tenderOrgName']
+    areas=doc['AreasByPincode']
+    embedding_text=f"{description} - {work_type} - {organisation_chain} - {areas}"
     if description:
-        embedding = await get_embedding([description])
+        embedding = await get_embedding([embedding_text])
 
         # Upsert vector into Pinecone
         index.upsert(vectors=[{
             "id": str(doc['_id']),
             "values": embedding,
             "metadata": {
-                "tenderOrgName": doc['tenderOrgName'],
+                "tenderOrgName": organisation_chain,
                 "tenderRefNumber": doc['tenderRefNumber'],
                 "tenderId": doc['tenderId'],
                 "tenderCategory": doc['tenderCategory'],
@@ -27,16 +32,17 @@ async def upsert_document_to_pinecone(doc):
                 "tenderEMDCost": doc['tenderEMDCost'],
                 "tenderTitle": doc['tenderTitle'],
                 "tenderDescription": doc['tenderDescription'],
-                "tenderProductCategory": doc['tenderProductCategory'],
+                "tenderProductCategory": work_type,
                 "tenderBidLocation": doc['tenderBidLocation'],
                 "tenderBidStartDate":doc['tenderBidStartDate'],
                 "tenderBidEndDate":doc['tenderBidEndDate'],
                 "tenderBidStartDateSeconds": date_string_to_timestamp(doc['tenderBidStartDate']),
                 "tenderBidEndDateSeconds": date_string_to_timestamp(doc['tenderBidEndDate']),
                 "tenderUrl": doc['tenderUrl'],
-                "AIImprovedDescription": doc.get('AIImprovedDescription'),
-                "LocationByPincode": doc.get('LocationByPincode'),
-                "AIContractSummary": doc.get('AIContractSummary')
+                "AIImprovedDescription": description,
+                'AreasByPincode':areas,
+                'DistrictsByPincode':doc['DistrictsByPincode'],
+                'StateByPincode':doc['StateByPincode']
             }
         }])
         print(f"Document {doc['_id']} upserted to Pinecone successfully.")
