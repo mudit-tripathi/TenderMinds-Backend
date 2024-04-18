@@ -1,7 +1,7 @@
 from Api.config.db import index
 from Api.helpers.embeddingsHelper import get_embedding
 from Api.helpers.dateToSecondsHelper import date_string_to_timestamp
-from langdetect import detect
+from Api.helpers.languageDetectHelper import safe_detect
 from Api.helpers.tendersDataCleaningHelper import improve_english_gemini
 
 async def upsert_document_to_pinecone(doc):
@@ -45,7 +45,7 @@ async def query_pinecone(query, top_k=10, emd_min_limit=0, emd_max_limit=2**63 -
                    bid_start_min='01-Jan-1970 12:00 AM', bid_start_max='31-Dec-9999 12:00 AM', 
                    bid_end_min='01-Jan-1970 12:00 AM', bid_end_max='31-Dec-9999 12:00 AM'):
     
-    if not detect(query)=='en':
+    if not safe_detect(query)=='en':
         query=await improve_english_gemini(query)
 
     bid_start_min = date_string_to_timestamp(bid_start_min)  

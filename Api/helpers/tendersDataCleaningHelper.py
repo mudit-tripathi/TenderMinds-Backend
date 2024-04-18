@@ -12,7 +12,7 @@ from Api.constant.prompts import IMPROVING_ENGLISH_PROMPT , IMPROVING_ENGLISH_TE
 from langchain.llms import OpenAI
 from Api.helpers.mongoHelper import insert_processed_tenders
 from Api.helpers.PincodeToDistrictHelper import get_district_by_pincode
-from langdetect import detect
+from Api.helpers.languageDetectHelper import safe_detect
 from Api.config.db import db
 
 
@@ -53,7 +53,8 @@ async def contract_summary(description,work_type,organisation_chain,locations):
 #     else :
 #         return contract_info(description,work_type,organisation_chain,locations)
     
-    
+
+
 async def tendersDataCleaningHelper(tender):
     # Use get method with a default value for each key to handle missing data
     tenderId = tender.get('Basic Details', {}).get('Tender ID', '')
@@ -78,8 +79,8 @@ async def tendersDataCleaningHelper(tender):
     tenderBidEndDate = tender.get('Critical Dates', {}).get('Bid Submission End Date', '')
     tenderUrl = tender.get('tender_url', '')
     
-    description_language = detect(tenderDescription)
-    title_language = detect(tenderTitle)
+    description_language = safe_detect(tenderDescription)
+    title_language = safe_detect(tenderTitle)
     if ' ' in tenderDescription:
         if description_language == 'en':
             AIImprovedDescription = tenderDescription
@@ -91,7 +92,7 @@ async def tendersDataCleaningHelper(tender):
         else :
             AIImprovedDescription = await improve_english_gemini(tenderTitle)
     else:
-        AIImprovedDescription = None
+        AIImprovedDescription = "Null"
         
     LocationByPincode = await get_district_by_pincode(str(tenderBidLocation))
     AIContractSummary = await contract_summary(AIImprovedDescription, tenderProductCategory, tenderOrgName, LocationByPincode)
