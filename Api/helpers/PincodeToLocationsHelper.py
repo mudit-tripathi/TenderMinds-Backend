@@ -15,8 +15,9 @@ async def get_locations_by_pincode(pincode,location):
             return Areas, Districts, States
         else:
             # Return an error message if the request was not successful
-            return location
+            return [location],[],[]
     except Exception as e:
         # Handle any errors that occur during the request or processing
-        return f"An error occurred: {str(e)}"
+        print(f"An error occurred: {str(e)}") 
+        return [location],[],[]
 

@@ -15,49 +15,51 @@ async def upsert_document_to_pinecone(doc):
     work_type= doc['tenderProductCategory']
     organisation_chain=doc['tenderOrgName']
     areas=doc['AreasByPincode']
-    embedding_text=f"{description} - {work_type} - {organisation_chain} - {areas}"
-    if description:
-        embedding = await get_embedding([embedding_text])
+    districts=doc['DistrictsByPincode']
+    state=doc['StateByPincode']
 
-        # Upsert vector into Pinecone
-        index.upsert(vectors=[{
-            "id": str(doc['_id']),
-            "values": embedding,
-            "metadata": {
-                "tenderOrgName": organisation_chain,
-                "tenderRefNumber": doc['tenderRefNumber'],
-                "tenderId": doc['tenderId'],
-                "tenderCategory": doc['tenderCategory'],
-                "tenderCost": doc['tenderCost'],
-                "tenderEMDCost": doc['tenderEMDCost'],
-                "tenderTitle": doc['tenderTitle'],
-                "tenderDescription": doc['tenderDescription'],
-                "tenderProductCategory": work_type,
-                "tenderBidLocation": doc['tenderBidLocation'],
-                "tenderBidStartDate":doc['tenderBidStartDate'],
-                "tenderBidEndDate":doc['tenderBidEndDate'],
-                "tenderBidStartDateSeconds": date_string_to_timestamp(doc['tenderBidStartDate']),
-                "tenderBidEndDateSeconds": date_string_to_timestamp(doc['tenderBidEndDate']),
-                "tenderUrl": doc['tenderUrl'],
-                "AIImprovedDescription": description,
-                'AreasByPincode':areas,
-                'DistrictsByPincode':doc['DistrictsByPincode'],
-                'StateByPincode':doc['StateByPincode']
-            }
-        }])
-        print(f"Document {doc['_id']} upserted to Pinecone successfully.")
+    embedding_text=f"DESCRIPTION: {description} - WORK_TYPE: {work_type} - ORG: {organisation_chain} - AREAS: {areas} - DISTRICTS: {districts} - STATE: {state}"
+    print(f"len of embedded_text is {len(embedding_text)}")
+    
+    embedding = await get_embedding([embedding_text])
+
+    # Upsert vector into Pinecone
+    index.upsert(vectors=[{
+        "id": str(doc['_id']),
+        "values": embedding,
+        "metadata": {
+            "tenderOrgName": organisation_chain,
+            "tenderProductCategory": work_type,
+            "AIImprovedDescription": description,
+            'AreasByPincode':areas,
+            'DistrictsByPincode':districts,
+            'StateByPincode':state,
+            "tenderRefNumber": doc['tenderRefNumber'],
+            "tenderId": doc['tenderId'],
+            "tenderCategory": doc['tenderCategory'],
+            "tenderCost": doc['tenderCost'],
+            "tenderEMDCost": doc['tenderEMDCost'],
+            "tenderTitle": doc['tenderTitle'],
+            "tenderDescription": doc['tenderDescription'],
+            "tenderBidLocation": doc['tenderBidLocation'],
+            "tenderBidStartDate":doc['tenderBidStartDate'],
+            "tenderBidEndDate":doc['tenderBidEndDate'],
+            "tenderBidStartDateSeconds": date_string_to_timestamp(doc['tenderBidStartDate']),
+            "tenderBidEndDateSeconds": date_string_to_timestamp(doc['tenderBidEndDate']),
+            "tenderUrl": doc['tenderUrl']
+            
+        }
+    }])
+    print(f"Document {doc['_id']} upserted to Pinecone successfully.")
 
 async def query_pinecone(query, top_k=10, emd_min_limit=0, emd_max_limit=2**63 - 1,  
-                   bid_start_min='01-Jan-1970 12:00 AM', bid_start_max='31-Dec-9999 12:00 AM', 
-                   bid_end_min='01-Jan-1970 12:00 AM', bid_end_max='31-Dec-9999 12:00 AM'):
+                   bid_start='01-Jan-1970 12:00 AM', bid_end='31-Dec-9999 12:00 AM'):
     
     if not safe_detect(query)=='en':
         query=await improve_english_gemini(query)
 
-    bid_start_min = date_string_to_timestamp(bid_start_min)  
-    bid_start_max = date_string_to_timestamp(bid_start_max )  
-    bid_end_min = date_string_to_timestamp(bid_end_min)  
-    bid_end_max = date_string_to_timestamp(bid_end_max)
+    bid_start = date_string_to_timestamp(bid_start)   
+    bid_end = date_string_to_timestamp(bid_end)
     # Get embedding for the query
     vector = await get_embedding(query)
 
@@ -71,10 +73,8 @@ async def query_pinecone(query, top_k=10, emd_min_limit=0, emd_max_limit=2**63 -
             "$and": [
                 {"tenderEMDCost": {"$gte": emd_min_limit}},
                 {"tenderEMDCost": {"$lte": emd_max_limit}},
-                {"tenderBidStartDateSeconds": {"$gte": bid_start_min}},
-                {"tenderBidStartDateSeconds": {"$lte": bid_start_max}},
-                {"tenderBidEndDateSeconds": {"$gte": bid_end_min}},
-                {"tenderBidEndDateSeconds": {"$lte": bid_end_max}}
+                {"tenderBidStartDateSeconds": {"$gte": bid_start}},
+                {"tenderBidEndDateSeconds": {"$lte": bid_end}}
             ]
         }
     )
