@@ -3,13 +3,19 @@ from Api.helpers.embeddingsHelper import get_embedding
 from Api.helpers.dateToSecondsHelper import date_string_to_timestamp
 from Api.helpers.languageDetectHelper import safe_detect
 from Api.helpers.tendersDataCleaningHelper import improve_english_gemini
+from Api.config import logging_config
+logging_config.setup_logging()
+import logging
+
+# Create a logger for this module
+logger = logging.getLogger(__name__)
 
 async def upsert_document_to_pinecone(doc):
-    print("Inside: upsert_document_to_pinecone")
+    logger.info("Entered upsert_document_to_pinecone function ")
     id= str(doc['_id'])
     response = index.fetch(ids=[id])
     if response['vectors']:
-        print(f"Document with the id {id} already exists")
+        logger.info(f"Document with the id {id} already exists")
         return
     description = doc["AIImprovedDescription"]
     work_type= doc['tenderProductCategory']
@@ -19,8 +25,7 @@ async def upsert_document_to_pinecone(doc):
     state=doc['StateByPincode']
 
     embedding_text=f"DESCRIPTION: {description} - WORK_TYPE: {work_type} - ORG: {organisation_chain} - AREAS: {areas} - DISTRICTS: {districts} - STATE: {state}"
-    print(f"len of embedded_text is {len(embedding_text)}")
-    
+    logger.info(f"Length of the embedding_text: {len(embedding_text)}")
     embedding = await get_embedding([embedding_text])
 
     # Upsert vector into Pinecone
@@ -50,11 +55,12 @@ async def upsert_document_to_pinecone(doc):
             
         }
     }])
-    print(f"Document {doc['_id']} upserted to Pinecone successfully.")
+    logger.info(f"Document {doc['_id']} upserted to Pinecone successfully.")
 
 async def query_pinecone(query, top_k=10, emd_min_limit=0, emd_max_limit=2**63 - 1,  
                    bid_start='01-Jan-1970 12:00 AM', bid_end='31-Dec-9999 12:00 AM'):
     
+    logger.info("Entered query_pinecone function")
     if not safe_detect(query)=='en':
         query=await improve_english_gemini(query)
 
@@ -80,5 +86,7 @@ async def query_pinecone(query, top_k=10, emd_min_limit=0, emd_max_limit=2**63 -
     )
 
     # Extract only metadata from Pinecone response matches
-    metadata_list = [match['metadata'] for match in response.get('matches', [])]
+    metadata_list = [{'score': match['score'], 'metadata': match['metadata']} for match in response.get('matches', [])]
+
+    logger.info("Exiting query_pinecone function")
     return metadata_list

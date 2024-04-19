@@ -6,6 +6,13 @@ from Api.Routes.utils import getResponse, riseHttpExceptionIfNotFound
 from Api.Services import tendersDataCleaningService as service
 from fastapi import APIRouter
 
+from Api.config import logging_config
+logging_config.setup_logging()
+import logging
+
+# Create a logger for this module
+logger = logging.getLogger(__name__)
+
 tendersDataCleanRoutes = APIRouter()
 base = '/tenders-cleaning/'
 

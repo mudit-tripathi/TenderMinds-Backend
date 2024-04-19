@@ -16,9 +16,16 @@ from Api.helpers.languageDetectHelper import safe_detect
 from Api.helpers.mongoHelper import tender_exists
 from Api.config.db import db
 
+from Api.config import logging_config
+logging_config.setup_logging()
+import logging
+
+# Create a logger for this module
+logger = logging.getLogger(__name__)
+
 
 async def improve_english_gemini(description):
-    print("inside: improve_english_gemini")
+    logger.info("Entered improve_english_gemini function")
     prompt = PromptTemplate(
         input_variables=["description"],
         template = IMPROVING_ENGLISH_PROMPT
@@ -40,7 +47,7 @@ async def improve_english_gemini(description):
   
 
 async def improved_description(title,description):
-    print("inside: improved_description")
+    logger.info("iEntered improved_description function")
     if ' ' in description:
         description_language = safe_detect(description)
         if description_language == 'en':
@@ -59,12 +66,13 @@ async def improved_description(title,description):
 
 
 async def tendersDataCleaningHelper(tender):
+    logger.info("Entered tendersDataCleaningHelper")
     # Use get method with a default value for each key to handle missing data
     tenderId = tender.get('Basic Details', {}).get('Tender ID', '')
     if tender_exists(tenderId):
         print(f"Tender with Tender id Number: {tenderId} already exists.")
         return
-    print("inside:tendersDataCleaningHelper ")
+    
     tenderOrgName = tender.get('Basic Details', {}).get('Organisation Chain', '')
     tenderRefNumber = tender.get('Basic Details', {}).get('Tender Reference Number', '')
     tenderCategory = tender.get('Basic Details', {}).get('Tender Category', '')
@@ -101,8 +109,9 @@ async def tendersDataCleaningHelper(tender):
         'DistrictsByPincode':DistrictsByPincode,
         'StateByPincode':StateByPincode
     }
-    print('tenderDescription',tenderDescription)
-    print('AIImprovedDescription',AIImprovedDescription)
+    logger.info(f'tenderDescription: {tenderDescription}')
+
+    logger.info(f"AIImprovedDescription: {AIImprovedDescription}")
     await insert_processed_tenders(tender_document)
     
 

@@ -2,6 +2,12 @@ from fastapi import APIRouter, Query, HTTPException
 import logging
 from Api.Services import tendersQueryingService as service
 
+from Api.config import logging_config
+logging_config.setup_logging()
+import logging
+
+# Create a logger for this module
+logger = logging.getLogger(__name__)
 
 tendersQueryingRoutes = APIRouter()
 base = '/tenders-search/'
