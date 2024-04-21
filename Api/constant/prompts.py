@@ -13,3 +13,12 @@ Given the following details about a government contract, create a clear and conc
 
 Construct a summary that integrates these details coherently. For instance, describe the work in context of the work type, specifying who is responsible (organisation chain) and where it is taking place (locations). If any details are missing, adapt the summary to remain fluid and complete without those specifics.Write everything in a single paragraph capturing all the information from these 4 fields.Ensure that the entire summary is written in proper case, even if any of the fields are in uppercase.
 """
+IMPROVING_ENGLISH_ORG_PROMPT ="""
+    Translate and standardize the name of an organization from a regional Indian language into clear, standardized English
+    here's onee such Organisation_Name: '{organisation_name}'. Just reply with your improved version in ENGLISH.
+"""
+IMPROVING_ENGLISH_QUERY_PROMPT="""
+Translate and standardize the following user query from a regional Indian language to clear, standardized English for effective search and retrieval of government tenders.
+
+here's the the query: "{query}". Just reply with your improved_version in ENGLISH. 
+"""

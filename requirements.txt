@@ -13,6 +13,7 @@ sniffio==1.3.1
 starlette==0.37.2
 typing_extensions==4.11.0
 uvicorn==0.29.0
+googletrans==4.0.0-rc1
 langchain 
 langchain_google_genai 
 langdetect

@@ -8,11 +8,11 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 import google.generativeai as genai
 from Api.helpers.gemini import chat_gemini
-from Api.constant.prompts import IMPROVING_ENGLISH_PROMPT , IMPROVING_ENGLISH_TENDER_INFORMATION
+from Api.constant.prompts import IMPROVING_ENGLISH_PROMPT , IMPROVING_ENGLISH_TENDER_INFORMATION, IMPROVING_ENGLISH_ORG_PROMPT
 from langchain.llms import OpenAI
 from Api.helpers.mongoHelper import insert_processed_tenders
 from Api.helpers.PincodeToLocationsHelper import get_locations_by_pincode
-from Api.helpers.languageDetectHelper import safe_detect
+from Api.helpers.languageDetectHelper import is_english
 from Api.helpers.mongoHelper import tender_exists
 from Api.config.db import db
 
@@ -24,7 +24,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def improve_english_gemini(description):
+async def improve_english_description(description):
     logger.info("Entered improve_english_gemini function")
     prompt = PromptTemplate(
         input_variables=["description"],
@@ -47,22 +47,31 @@ async def improve_english_gemini(description):
   
 
 async def improved_description(title,description):
-    logger.info("iEntered improved_description function")
+    logger.info("Entered improved_description function")
     if ' ' in description:
-        description_language = safe_detect(description)
-        if description_language == 'en':
+        description_language = is_english(description)
+        if description_language:
             return description
         else :
-            return  await improve_english_gemini(description)
+            return  await improve_english_description(description)
     elif ' ' in title:
-        title_language = safe_detect(title)
-        if title_language == 'en':
+        title_language = is_english(title)
+        if title_language:
             return title
         else :
-            return await improve_english_gemini(title)
+            return await improve_english_description(title)
     else:
         return "None"
     
+async def improve_english_organisation(organisation_name):
+    logger.info("Entered improve_english_organisation function")
+    prompt = PromptTemplate(
+        input_variables=["organisation_name"],
+        template = IMPROVING_ENGLISH_ORG_PROMPT
+    )
+    formatted_prompt = prompt.format(organisation_name=organisation_name)
+    return await chat_gemini(formatted_prompt)
+
 
 
 async def tendersDataCleaningHelper(tender):
@@ -89,6 +98,7 @@ async def tendersDataCleaningHelper(tender):
     tenderBidEndDate = tender.get('Critical Dates', {}).get('Bid Submission End Date', '')
     tenderUrl = tender.get('tender_url', '')
     AIImprovedDescription=await improved_description(tenderTitle, tenderDescription)
+    AIImprovedOrgName= await improve_english_organisation(tenderOrgName)
     AreasByPincode, DistrictsByPincode, StateByPincode= await get_locations_by_pincode(tenderBidPincode, tenderBidLocation)
     tender_document = {
         'tenderOrgName': tenderOrgName,
@@ -105,6 +115,7 @@ async def tendersDataCleaningHelper(tender):
         'tenderBidEndDate': tenderBidEndDate,
         'tenderUrl': tenderUrl,
         'AIImprovedDescription': AIImprovedDescription,
+        'AIImprovedOrgName':AIImprovedOrgName,
         'AreasByPincode':AreasByPincode,
         'DistrictsByPincode':DistrictsByPincode,
         'StateByPincode':StateByPincode
@@ -112,6 +123,8 @@ async def tendersDataCleaningHelper(tender):
     logger.info(f'tenderDescription: {tenderDescription}')
 
     logger.info(f"AIImprovedDescription: {AIImprovedDescription}")
+    logger.info(f"Organisation Name: {tenderOrgName}")
+    logger.info(f"AIImprovedOrgName: {AIImprovedOrgName}")
     await insert_processed_tenders(tender_document)
     
 
