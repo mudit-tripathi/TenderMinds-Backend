@@ -44,6 +44,7 @@ async def insert_processed_tenders(tender):
 
 async def check_organisation_in_database(organisation_name):
     # Check if organisation_name exists in MongoDB
+    logger.info("Entered check_organisation_in_database")
     collection = db['tender-org-english-cache']
     document = collection.find_one({"_id": organisation_name})
     if document:
@@ -52,6 +53,7 @@ async def check_organisation_in_database(organisation_name):
         return None 
 
 async def save_organisation_to_database(organisation_name, improved_organisation):
+    logger.info("save_organisation_to_database")
     # Save the improved organisation to MongoDB
     collection = db['tender-org-english-cache']
     collection.replace_one({"_id": organisation_name}, {"_id": organisation_name, "value": improved_organisation}, upsert=True)

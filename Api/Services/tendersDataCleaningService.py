@@ -18,7 +18,7 @@ async def CleanTenders() -> str:
     pre_processed_tenders_cursor = pre_processed_tenders_collection.find().batch_size(BATCH_SIZE)
     count=0
     for pre_processed_tenders_document in pre_processed_tenders_cursor:
-        if count==200:
+        if count==20:
             break
         await tendersDataCleaningHelper(pre_processed_tenders_document)
         count+=1

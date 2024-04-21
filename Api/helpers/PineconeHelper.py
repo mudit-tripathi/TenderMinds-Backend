@@ -34,8 +34,10 @@ async def upsert_document_to_pinecone(doc):
     areas=doc['AreasByPincode']
     districts=doc['DistrictsByPincode']
     state=doc['StateByPincode']
-
-    embedding_text=f"DESCRIPTION: {description} - WORK_TYPE: {work_type} - ORG: {organisation_chain} - DISTRICTS: {districts} - STATE: {state} - AREAS: {areas}"
+    if description.lower()=="none":
+        embedding_text=f"WORK_TYPE: {work_type} - ORG: {organisation_chain} - DISTRICTS: {districts} - STATE: {state} - AREAS: {areas}"
+    else:
+        embedding_text=f"DESCRIPTION: {description} - WORK_TYPE: {work_type} - ORG: {organisation_chain} - DISTRICTS: {districts} - STATE: {state} - AREAS: {areas}"
     logger.info(f"Length of the embedding_text: {len(embedding_text)}")
     embedding = await get_embedding([embedding_text])
 
