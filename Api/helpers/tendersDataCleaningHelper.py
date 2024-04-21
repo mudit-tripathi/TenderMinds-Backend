@@ -9,11 +9,10 @@ from langchain.prompts import PromptTemplate
 import google.generativeai as genai
 from Api.helpers.gemini import chat_gemini
 from Api.constant.prompts import IMPROVING_ENGLISH_PROMPT , IMPROVING_ENGLISH_TENDER_INFORMATION, IMPROVING_ENGLISH_ORG_PROMPT
-from langchain.llms import OpenAI
 from Api.helpers.mongoHelper import insert_processed_tenders
 from Api.helpers.PincodeToLocationsHelper import get_locations_by_pincode
 from Api.helpers.languageDetectHelper import is_english
-from Api.helpers.mongoHelper import tender_exists
+from Api.helpers.mongoHelper import tender_exists , check_organisation_in_database , save_organisation_to_database
 from Api.config.db import db
 
 from Api.config import logging_config
@@ -65,12 +64,18 @@ async def improved_description(title,description):
     
 async def improve_english_organisation(organisation_name):
     logger.info("Entered improve_english_organisation function")
-    prompt = PromptTemplate(
-        input_variables=["organisation_name"],
-        template = IMPROVING_ENGLISH_ORG_PROMPT
-    )
-    formatted_prompt = prompt.format(organisation_name=organisation_name)
-    return await chat_gemini(formatted_prompt)
+    improved_organisation_name = await check_organisation_in_database(organisation_name)
+    if improved_organisation_name : 
+        return improved_organisation_name
+    else :
+        prompt = PromptTemplate(
+            input_variables=["organisation_name"],
+            template = IMPROVING_ENGLISH_ORG_PROMPT
+        )
+        formatted_prompt = prompt.format(organisation_name=organisation_name)
+        improved_organisation_name = await chat_gemini(formatted_prompt)
+        await save_organisation_to_database(organisation_name,improved_organisation_name)
+        return improved_organisation_name
 
 
 

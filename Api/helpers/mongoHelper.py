@@ -40,3 +40,18 @@ async def insert_processed_tenders(tender):
         logger.info(f"Tender with Tender id Number: {tender['tenderId']} inserted successfully.")
     except Exception as e:
         logger.error(f"An error occurred while inserting the tender: {tender['tenderId']} {e}")
+
+
+async def check_organisation_in_database(organisation_name):
+    # Check if organisation_name exists in MongoDB
+    collection = db['tender-org-english-cache']
+    document = collection.find_one({"_id": organisation_name})
+    if document:
+        return document["value"]  # Return the value if it exists
+    else:
+        return None 
+
+async def save_organisation_to_database(organisation_name, improved_organisation):
+    # Save the improved organisation to MongoDB
+    collection = db['tender-org-english-cache']
+    collection.replace_one({"_id": organisation_name}, {"_id": organisation_name, "value": improved_organisation}, upsert=True)

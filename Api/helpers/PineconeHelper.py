@@ -75,8 +75,8 @@ async def query_pinecone(query, top_k=10, emd_min_limit=0, emd_max_limit=2**63 -
                    bid_start='01-Jan-1970 12:00 AM', bid_end='31-Dec-9999 12:00 AM'):
     
     logger.info("Entered query_pinecone function")
-    if not is_english(query):
-        query=await improve_english_query(query)
+    # if not is_english(query):
+    #     query=await improve_english_query(query)
     logger.info(f"The query is: {query}")
 
     bid_start = date_string_to_timestamp(bid_start)   
